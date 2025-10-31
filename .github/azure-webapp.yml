@@ -63,14 +63,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: a7b128ee-6663-478b-9b21-e3dc738e51f0
+          client-id: bd882cee-2c31-46a3-a346-f3fb5b384171
           tenant-id: 4996088d-995f-4a9c-b06a-6c81313e0ce4
           subscription-id: 946e81b3-2853-4da5-9a06-d04a0804ea78
+          client-secret: M6O8Q~GEWgXlvTaYUoTBeFngqylpm1pipTmMcc5y
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'cxo-demo'
-          slot-name: 'Production'
-          
+
+                
