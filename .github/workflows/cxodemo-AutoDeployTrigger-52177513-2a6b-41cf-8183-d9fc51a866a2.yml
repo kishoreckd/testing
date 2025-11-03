@@ -41,9 +41,10 @@ jobs:
           registryUsername: ${{ secrets.CXODEMO_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CXODEMO_REGISTRY_PASSWORD }}
           containerAppName: cxodemo
-          resourceGroup: demo
+          resourceGroup: cxo
           imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
           _buildArgumentsKey_: |
             _buildArgumentsValues_
+
 
 
