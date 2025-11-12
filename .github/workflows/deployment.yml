@@ -13,7 +13,6 @@ on:
 env:
   VERSION: v0.0.0
 
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -22,17 +21,16 @@ jobs:
       contents: read
 
     steps:
-      # Checkout the repo
+      # Step 0: Checkout the repository
       - name: Checkout to the branch
         uses: actions/checkout@v4
 
-      #  Step 1: Set dynamic version label
-      # You can modify this to use your own format (e.g. semver)
+      # Step 1: Generate a dynamic version tag
       - name: Generate Version Tag
         id: version
         run: echo "VERSION=v$(date +'%Y.%m.%d.%H%M')" >> $GITHUB_ENV
 
-      #  Step 2: Azure Login
+      # Step 2: Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -40,31 +38,36 @@ jobs:
           tenant-id: ${{ secrets.CXOTEST_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.CXOTEST_AZURE_SUBSCRIPTION_ID }}
 
-      #  Step 3: Build & push Docker image with version tag
+      # Step 3: Build and push Docker image to Azure Container Registry
       - name: Build and push container image to Azure Container Registry
         run: |
-          #  Define registry and image name properly
+          # Define registry and image name
           REGISTRY=${{ secrets.CXOTEST_REGISTRY_URL }}
+          if [ -z "$REGISTRY" ]; then
+            echo "❌ ERROR: CXOTEST_REGISTRY_URL secret is not set."
+            exit 1
+          fi
+
           IMAGE_NAME=$REGISTRY/cxo-test:${{ env.VERSION }}
-          
+
           echo "🔧 Using registry: $REGISTRY"
           echo "🚀 Building image: $IMAGE_NAME"
-          
-          #  Build and push
-          docker build -t $IMAGE_NAME .
+
+          # Build and push
           echo "${{ secrets.CXOTEST_REGISTRY_PASSWORD }}" | docker login $REGISTRY --username ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --password-stdin
+          docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-          #  Store IMAGE_NAME for later steps
+          # Store IMAGE_NAME for later steps
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-      #  Step 4: Deploy container app to Azure
+      # Step 4: Deploy the container app to Azure
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
           dockerfilePath: ./Dockerfile
-          registryUrl: ${{ secrets.CXOTEST_REGISTRY_USERNAME }}
+          registryUrl: ${{ secrets.CXOTEST_REGISTRY_URL }}
           registryUsername: ${{ secrets.CXOTEST_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CXOTEST_REGISTRY_PASSWORD }}
           containerAppName: cxo-test
@@ -76,7 +79,7 @@ jobs:
           envVars: |
             APP_VERSION=${{ env.VERSION }}
 
-      #  Step 5: Optional — record deployed version in a file
+      # Step 5: Record deployed version info
       - name: Record deployed version
         run: |
           echo "Deployed version: ${{ env.VERSION }}" >> version-history.log
