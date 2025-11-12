@@ -10,8 +10,8 @@ on:
 
   workflow_dispatch:
 
-  env:
-    VERSION: v0.0.0
+env:
+  VERSION: v0.0.0
 
 
 jobs:
