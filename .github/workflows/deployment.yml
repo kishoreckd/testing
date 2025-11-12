@@ -31,16 +31,16 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ secrets.GITHUB_USERNAME }}
-          password: ${{ secrets.GITHUB_PAT }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PAT }}
 
       - name: Build and Deploy Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           appSourcePath: ${{ github.workspace }}
           registryUrl: ghcr.io
-          registryUsername: ${{ secrets.GITHUB_USERNAME }}
-          registryPassword: ${{ secrets.GITHUB_PAT }}
+          registryUsername: ${{ secrets.secrets.USERNAME }}
+          registryPassword: ${{ secrets.secrets.PAT }}
           containerAppName: ${{ secrets.CONTAINER_APP_NAME }}
           resourceGroup: ${{ secrets.RESOURCE_GROUP }}
           containerAppEnvironment: ${{ secrets.ENVIRONMENT_NAME }}
