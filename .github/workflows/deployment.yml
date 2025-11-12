@@ -1,0 +1,73 @@
+name: Trigger auto deployment for cxo-test
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**'
+      - '.github/workflows/cxo-test-AutoDeployTrigger.yml'
+
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      # Checkout the repo
+      - name: Checkout to the branch
+        uses: actions/checkout@v4
+
+      # 🔹 Step 1: Set dynamic version label
+      # You can modify this to use your own format (e.g. semver)
+      - name: Generate Version Tag
+        id: version
+        run: echo "VERSION=v$(date +'%Y.%m.%d.%H%M')" >> $GITHUB_ENV
+
+      # 🔹 Step 2: Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.CXOTEST_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.CXOTEST_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.CXOTEST_AZURE_SUBSCRIPTION_ID }}
+
+      # 🔹 Step 3: Build & push Docker image with version tag
+      - name: Build and push container image to Azure Container Registry
+        run: |
+          IMAGE_NAME=${{ secrets.CXOTEST_REGISTRY_USERNAME }}/cxo-test:${{ env.VERSION }}
+          echo "Building image: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME .
+          echo "${{ secrets.CXOTEST_REGISTRY_PASSWORD }}" | docker login ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --username ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --password-stdin
+          docker push $IMAGE_NAME
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      # 🔹 Step 4: Deploy container app to Azure
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: ./Dockerfile
+          registryUrl: ${{ secrets.CXOTEST_REGISTRY_USERNAME }}
+          registryUsername: ${{ secrets.CXOTEST_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.CXOTEST_REGISTRY_PASSWORD }}
+          containerAppName: cxo-test
+          resourceGroup: cxo
+          imageToBuild: ${{ env.IMAGE_NAME }}
+          tags: |
+            Version=${{ env.VERSION }}
+            BuildCommit=${{ github.sha }}
+          envVars: |
+            APP_VERSION=${{ env.VERSION }}
+
+      # 🔹 Step 5: Optional — record deployed version in a file
+      - name: Record deployed version
+        run: |
+          echo "Deployed version: ${{ env.VERSION }}" >> version-history.log
+          echo "Commit: ${{ github.sha }}" >> version-history.log
+          echo "Date: $(date)" >> version-history.log
+          echo "---" >> version-history.log
