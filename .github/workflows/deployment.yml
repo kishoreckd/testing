@@ -39,10 +39,10 @@ jobs:
       # 🔹 Step 3: Build & push Docker image with version tag
       - name: Build and push container image to Azure Container Registry
         run: |
-          IMAGE_NAME=${{ secrets.CXOTEST_REGISTRY_USERNAME }}/cxo-test:${{ env.VERSION }}
+          IMAGE_NAME=${{ secrets.CXOTEST_REGISTRY_URL }}/cxo-test:${{ env.VERSION }}
           echo "Building image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME .
-          echo "${{ secrets.CXOTEST_REGISTRY_PASSWORD }}" | docker login ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --username ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --password-stdin
+          echo "${{ secrets.CXOTEST_REGISTRY_PASSWORD }}" | docker login ${{ secrets.CXOTEST_REGISTRY_URL }} --username ${{ secrets.CXOTEST_REGISTRY_USERNAME }} --password-stdin
           docker push $IMAGE_NAME
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
