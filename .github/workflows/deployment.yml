@@ -1,53 +1,28 @@
-name: Build & Deploy to Azure Container Apps
+name: Show Event Info
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ master ]
-
-
-permissions:
-  contents: read
-  packages: write
 
 jobs:
-  build-and-deploy:
+  show:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Print event name
+        run: echo "Event Name = $GITHUB_EVENT_NAME"
 
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: >-
-            {
-              "clientId": "${{ secrets.CLIENT_ID }}",
-              "clientSecret": "${{ secrets.CLIENT_SECRET }}",
-              "subscriptionId": "${{ secrets.SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.TENANT_ID }}"
-            }
+      - name: Print full event payload
+        run: |
+          echo "====== EVENT PAYLOAD ======"
+          cat "$GITHUB_EVENT_PATH"
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PAT }}
+      - name: Print Github context
+        run: |
+          echo "====== GITHUB CONTEXT ======"
+          echo "${{ toJson(github) }}"
 
-      - name: Build and Deploy Container App
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          appSourcePath: ${{ github.workspace }}
-          registryUrl: ghcr.io
-          registryUsername: ${{ secrets.secrets.USERNAME }}
-          registryPassword: ${{ secrets.secrets.PAT }}
-          containerAppName: ${{ secrets.CONTAINER_APP_NAME }}
-          resourceGroup: ${{ secrets.RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ secrets.ENVIRONMENT_NAME }}
-          location: ${{ secrets.LOCATION }}
-          imageToBuild: ghcr.io/cxorepo/dxc-content-agent:${{ github.sha }}
-          resources: |
-            {
-              "cpu": "2.0",
-              "memory": "4Gi"
-            }
+      - name: Print environment variables
+        run: |
+          echo "====== ENVIRONMENT VARS ======"
+          env | sort
